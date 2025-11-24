@@ -1,0 +1,24 @@
+name: generic_picker_scroll
+description: A customizable and easy-to-use generic picker library for Flutter. Compatible with Android & iOS & Web.
+version: 4.0.0
+homepage: https://github.com/fabianolongaray/generic_picker_scroll
+repository: https://github.com/fabianolongaray/generic_picker_scroll
+
+environment:
+  sdk: ">=2.12.0 <4.0.0"
+  flutter: ">=1.20.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+
+
+platforms:
+  android:
+  ios:
