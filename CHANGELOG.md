@@ -1,3 +1,10 @@
+## 4.0.1
+
+* Fix style not updating when scrolling the picker component - styles now correctly update to reflect the currently selected value instead of staying at the initial value
+* Convert `_ValueScrollView` from StatelessWidget to StatefulWidget to properly track and update selected item state during scrolling
+
+---
+
 ## 4.0.0
 
 * First commit of a generic picker scroll based on date picker scroll

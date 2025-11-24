@@ -364,7 +364,7 @@ class _GenericValuePickerState extends State<GenericValuePicker> {
 }
 
 /// Internal scroll view for value picker items
-class _ValueScrollView extends StatelessWidget {
+class _ValueScrollView extends StatefulWidget {
   const _ValueScrollView({
     Key? key,
     required this.items,
@@ -386,22 +386,66 @@ class _ValueScrollView extends StatelessWidget {
   final ValueChanged<int> onChanged;
   final bool alwaysUseUnselectedStyle;
 
+  @override
+  State<_ValueScrollView> createState() => _ValueScrollViewState();
+}
+
+class _ValueScrollViewState extends State<_ValueScrollView> {
+  late int _currentSelectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentSelectedIndex = widget.selectedIndex;
+    widget.controller.addListener(_onScrollChanged);
+  }
+
+  @override
+  void didUpdateWidget(_ValueScrollView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_onScrollChanged);
+      widget.controller.addListener(_onScrollChanged);
+    }
+    // Update if the initial selectedIndex changed from parent
+    if (oldWidget.selectedIndex != widget.selectedIndex) {
+      _currentSelectedIndex = widget.selectedIndex;
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onScrollChanged);
+    super.dispose();
+  }
+
+  void _onScrollChanged() {
+    if (widget.controller.hasClients) {
+      final newSelectedIndex = widget.controller.selectedItem % widget.items.length;
+      if (newSelectedIndex != _currentSelectedIndex) {
+        setState(() {
+          _currentSelectedIndex = newSelectedIndex;
+        });
+      }
+    }
+  }
+
   double _getScrollViewWidth(BuildContext context) {
-    final padding = scrollViewOptions.horizontalPadding * 2;
-    if (scrollViewOptions.width != null) {
-      return scrollViewOptions.width! + padding;
+    final padding = widget.scrollViewOptions.horizontalPadding * 2;
+    if (widget.scrollViewOptions.width != null) {
+      return widget.scrollViewOptions.width! + padding;
     }
 
     double textWidth = 0;
-    for (final item in items) {
-      final text = '$item${scrollViewOptions.label}';
+    for (final item in widget.items) {
+      final text = '$item${widget.scrollViewOptions.label}';
       final selectedWidth = text.width(
         context,
-        style: scrollViewOptions.selectedTextStyle,
+        style: widget.scrollViewOptions.selectedTextStyle,
       );
       final unselectedWidth = text.width(
         context,
-        style: scrollViewOptions.textStyle,
+        style: widget.scrollViewOptions.textStyle,
       );
       textWidth = max(textWidth, max(selectedWidth, unselectedWidth));
     }
@@ -413,28 +457,40 @@ class _ValueScrollView extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        int _maximumCount = constraints.maxHeight ~/ options.itemExtent;
+        int _maximumCount = constraints.maxHeight ~/ widget.options.itemExtent;
         return Container(
-          margin: scrollViewOptions.margin,
+          margin: widget.scrollViewOptions.margin,
           width: _getScrollViewWidth(context),
           child: ListWheelScrollView.useDelegate(
-            itemExtent: options.itemExtent,
-            diameterRatio: options.diameterRatio,
-            controller: controller,
+            itemExtent: widget.options.itemExtent,
+            diameterRatio: widget.options.diameterRatio,
+            controller: widget.controller,
             physics: const FixedExtentScrollPhysics(),
-            perspective: options.perspective,
-            onSelectedItemChanged: onChanged,
-            childDelegate: (options.isLoop ?? scrollViewOptions.isLoop) &&
-                    items.length > _maximumCount
+            perspective: widget.options.perspective,
+            onSelectedItemChanged: (index) {
+              // Update internal state first
+              if (widget.controller.hasClients) {
+                final newSelectedIndex = index % widget.items.length;
+                if (newSelectedIndex != _currentSelectedIndex) {
+                  setState(() {
+                    _currentSelectedIndex = newSelectedIndex;
+                  });
+                }
+              }
+              // Then call the external callback
+              widget.onChanged(index);
+            },
+            childDelegate: (widget.options.isLoop ?? widget.scrollViewOptions.isLoop) &&
+                    widget.items.length > _maximumCount
                 ? ListWheelChildLoopingListDelegate(
                     children: List<Widget>.generate(
-                      items.length,
+                      widget.items.length,
                       (index) => _buildItemView(index: index),
                     ),
                   )
                 : ListWheelChildListDelegate(
                     children: List<Widget>.generate(
-                      items.length,
+                      widget.items.length,
                       (index) => _buildItemView(index: index),
                     ),
                   ),
@@ -445,25 +501,25 @@ class _ValueScrollView extends StatelessWidget {
   }
 
   Widget _buildItemView({required int index}) {
-    // Check if this item is currently selected using the controller
-    final currentSelectedItem = controller.hasClients
-        ? controller.selectedItem % items.length
-        : selectedIndex;
-    final isSelected = currentSelectedItem == index && !alwaysUseUnselectedStyle;
+    // Use the current selected index from state
+    final currentSelectedItem = widget.controller.hasClients
+        ? _currentSelectedIndex
+        : widget.selectedIndex;
+    final isSelected = currentSelectedItem == index && !widget.alwaysUseUnselectedStyle;
     
     return GestureDetector(
-      onTap: () => onTap(index),
+      onTap: () => widget.onTap(index),
       child: Container(
         padding: EdgeInsets.symmetric(
-          horizontal: scrollViewOptions.horizontalPadding,
+          horizontal: widget.scrollViewOptions.horizontalPadding,
         ),
-        alignment: scrollViewOptions.alignment,
+        alignment: widget.scrollViewOptions.alignment,
         child: Text(
-          '${items[index]}${scrollViewOptions.label}',
+          '${widget.items[index]}${widget.scrollViewOptions.label}',
           style: isSelected
-              ? scrollViewOptions.selectedTextStyle
-              : scrollViewOptions.textStyle,
-          textScaler: TextScaler.linear(scrollViewOptions.textScaleFactor),
+              ? widget.scrollViewOptions.selectedTextStyle
+              : widget.scrollViewOptions.textStyle,
+          textScaler: TextScaler.linear(widget.scrollViewOptions.textScaleFactor),
         ),
       ),
     );
