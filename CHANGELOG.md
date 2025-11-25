@@ -1,3 +1,10 @@
+## 4.0.2
+
+* Fix unit initialization - unit value is now properly validated and set when the picker is initialized
+* Improve unit handling in `GenericPicker` widget to ensure the passed unit is validated against available units list
+
+---
+
 ## 4.0.1
 
 * Fix style not updating when scrolling the picker component - styles now correctly update to reflect the currently selected value instead of staying at the initial value
